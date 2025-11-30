@@ -2,9 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Шахматы Pro</title>
     
+    <!-- Telegram WebApp Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
     <!-- Стили: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -21,6 +24,8 @@
             color: #e2e8f0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overscroll-behavior: none;
+            user-select: none; /* Улучшает UX в приложении */
+            -webkit-user-select: none;
         }
         #myBoard {
             width: 100%;
@@ -44,8 +49,8 @@
 <body class="min-h-screen flex flex-col items-center justify-center p-4 relative">
 
     <!-- Версия игры -->
-    <div class="absolute top-2 right-2 text-gray-600 text-xs font-mono opacity-50 hover:opacity-100 transition-opacity select-none">
-        v1.0.7 (Stable)
+    <div class="absolute top-2 right-2 text-gray-600 text-xs font-mono opacity-50 hover:opacity-100 transition-opacity select-none z-10">
+        v1.0.8 (TG Fix)
     </div>
 
     <!-- Заголовок -->
@@ -119,7 +124,7 @@
                         </div>
                         
                         <!-- Индикатор статуса подключения (для ТГ) -->
-                        <div id="connection-status" class="text-xs text-yellow-500 mb-2 hidden"><i class="fas fa-circle-notch fa-spin"></i> Подключение к серверу...</div>
+                        <div id="connection-status" class="text-xs text-yellow-500 mb-2 hidden cursor-pointer hover:underline" onclick="alert(window.lastFirebaseError || 'Unknown Error')"><i class="fas fa-circle-notch fa-spin"></i> Подключение к серверу...</div>
 
                         <div id="room-input-container" class="hidden animate-fade-in">
                             <input type="text" id="roomIdInput" placeholder="Введите ID комнаты" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white mb-2 text-center uppercase tracking-widest">
@@ -162,6 +167,12 @@
     </div>
 
     <script>
+        // Инициализация Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand(); // Разворачиваем на весь экран
+        }
+
         function checkLibraries() {
             var missing = [];
             if (typeof jQuery === 'undefined') missing.push('jQuery');
@@ -188,6 +199,7 @@
         var currentRoom = null;
         var playerColor = 'w';
         var firebaseAvailable = false;
+        window.lastFirebaseError = null;
         
         var firebaseActions = {
             createGame: async () => showModal('Подождите', 'Модуль онлайн игры подключается...'),
@@ -224,19 +236,18 @@
 
                 $('#status').text("Готово к игре!");
 
-                // --- WATCHDOG (Таймер безопасности) ---
-                // Увеличен до 15 секунд, чтобы дать время на Fallback ретрай
+                // --- WATCHDOG ---
                 setTimeout(function() {
                     if (!firebaseAvailable) {
                         const statusEl = $('#connection-status');
-                        // Если статус все еще "Подключение..."
                         if (statusEl.length > 0 && !statusEl.hasClass('text-red-500')) {
                             console.warn("Firebase watchdog timed out.");
-                            statusEl.html('<i class="fas fa-wifi"></i> Сервер недоступен (Оффлайн)').removeClass('text-yellow-500 hidden').addClass('text-red-500');
+                            statusEl.html('<i class="fas fa-exclamation-triangle"></i> Сервер недоступен (Нажми для деталей)')
+                                    .removeClass('text-yellow-500 hidden')
+                                    .addClass('text-red-500');
                             
-                            // Блокируем кнопки
-                            window.firebaseActions.createGame = async () => showModal('Ошибка', 'Не удалось подключиться к серверу. Проверьте интернет или VPN.');
-                            window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Не удалось подключиться к серверу. Проверьте интернет или VPN.');
+                            window.firebaseActions.createGame = async () => showModal('Ошибка', 'Сервер недоступен. Вероятно, ограничения сети Telegram или VPN.');
+                            window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Сервер недоступен. Вероятно, ограничения сети Telegram или VPN.');
                         }
                     }
                 }, 15000);
@@ -479,6 +490,14 @@
 
                 const app = initializeApp(JSON.parse(configStr));
                 const auth = getAuth(app);
+                
+                // CRITICAL FOR TELEGRAM: FORCE IN-MEMORY PERSISTENCE IMMEDIATELY
+                try {
+                    await setPersistence(auth, inMemoryPersistence);
+                } catch (e) {
+                    console.warn("Persistence override warning:", e);
+                }
+
                 const db = getFirestore(app);
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'chess-game';
                 
@@ -495,31 +514,16 @@
                 });
 
                 try {
-                    // ПРИОРИТЕТ 1: Токен (если есть)
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                          await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
-                         // ПРИОРИТЕТ 2: Быстрая попытка анонимного входа (3 сек)
-                         // Если зависнет - сразу пробуем InMemory
-                         const shortTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("AuthTimeout")), 3000));
-                         await Promise.race([signInAnonymously(auth), shortTimeout]);
+                         // Простая попытка, так как persistence уже задан
+                         await signInAnonymously(auth);
                     }
-
                 } catch (err) {
-                    console.warn("Auth failed or timed out, switching to InMemoryPersistence...", err);
-                    
-                    // ПРИОРИТЕТ 3: Фолбэк для Telegram/Instagram Webview (InMemory)
-                    try {
-                        await setPersistence(auth, inMemoryPersistence);
-                        await signInAnonymously(auth);
-                    } catch (err2) {
-                        console.error("Critical Auth Error:", err2);
-                        // Если даже InMemory не работает - значит сеть блокирует Firebase полностью
-                        window.firebaseActions.createGame = async () => showModal('Ошибка', 'Онлайн недоступен (Блокировка сети).');
-                        window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Онлайн недоступен (Блокировка сети).');
-                        $('#connection-status').text("Ошибка: Сеть блокирует сервер").addClass('text-red-500').removeClass('hidden text-yellow-500');
-                        return;
-                    }
+                    window.lastFirebaseError = err.message;
+                    console.error("Critical Auth Error:", err);
+                    // Оставляем как есть, Watchdog покажет ошибку
                 }
 
                 window.firebaseActions.createGame = async function() {
