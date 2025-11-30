@@ -5,25 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Шахматы Pro</title>
     
-    <!-- Стили: Tailwind CSS (обычно загружается без проблем) -->
+    <!-- Стили: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 
-      ОБНОВЛЕННЫЕ ИСТОЧНИКИ БИБЛИОТЕК (CDNJS - самый надежный) 
-      Порядок загрузки важен!
-    -->
-    
-    <!-- 1. JQuery -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" xintegrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    
-    <!-- 2. Chess.js (Логика игры) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" xintegrity="sha512-xRllwz3ikq1uwu9e9uGJoIqX/Bl7r14i5nR8oIKnLh8/Mwd56xM0y31U9A/5/A6B/T0A4B3hP48L8E/0tQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    
-    <!-- 3. Chessboard.js (Визуализация) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" xintegrity="sha512-TU/clvSaT+qWp73X3Q54V5U4/J4Q55gN1T9sS2JcZMBY8B/2A46Z5h5Q56455c5g5P5555555555555" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js" xintegrity="sha512-WbedvrH77v0gQ2Yyp4S6F16gQ1WbwMvyG0/1M1uDk5E4E4gq5g5g5g5g5g5g5g5g5g5g5g5g5g5g5g5" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    
-    <!-- Иконки -->
+    <!-- Библиотеки (CDNJS) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -66,19 +55,16 @@
         <!-- Левая колонка: Доска -->
         <div class="flex-1 flex flex-col items-center justify-start w-full">
             <div id="status" class="w-full text-center mb-4 text-lg font-semibold text-white bg-gray-700 py-2 rounded transition-colors duration-300">
-                Проверка компонентов...
+                Загрузка...
             </div>
             
-            <!-- Контейнер ошибки (скрыт по умолчанию) -->
             <div id="error-box" class="hidden w-full bg-red-900 border border-red-500 text-white p-4 rounded mb-4 text-sm">
                 <p class="font-bold">Ошибка загрузки:</p>
                 <ul id="missing-libs" class="list-disc pl-5 mt-1"></ul>
-                <p class="mt-2 text-xs text-gray-300">Попробуйте отключить AdBlock или проверьте интернет.</p>
             </div>
 
             <div class="w-full max-w-[500px] aspect-square bg-gray-700 rounded shadow-inner flex items-center justify-center overflow-hidden relative">
                 <div id="myBoard" class="w-full z-10"></div>
-                <!-- Заглушка если доска не прогрузится -->
                 <div id="board-placeholder" class="absolute inset-0 flex items-center justify-center text-gray-500 z-0">
                     <i class="fas fa-chess-board text-6xl opacity-20"></i>
                 </div>
@@ -92,7 +78,6 @@
         <!-- Правая колонка: Управление -->
         <div class="w-full md:w-80 flex flex-col gap-4">
             
-            <!-- Режимы игры -->
             <div class="bg-gray-700 p-4 rounded-lg">
                 <h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Настройки игры</h2>
                 
@@ -104,7 +89,7 @@
                     </select>
                 </div>
 
-                <!-- Настройки для AI -->
+                <!-- Настройки AI -->
                 <div id="ai-controls">
                     <div class="mb-4">
                         <label class="block text-sm font-medium mb-2">Сложность:</label>
@@ -119,7 +104,7 @@
                     </button>
                 </div>
 
-                <!-- Настройки для Мультиплеера -->
+                <!-- Настройки Мультиплеера -->
                 <div id="multiplayer-controls" class="hidden">
                     <div class="mb-4">
                         <p class="text-xs text-gray-400 mb-2">Для игры с другом используйте ID комнаты.</p>
@@ -127,6 +112,10 @@
                             <button id="createGameBtn" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded text-sm font-bold transition shadow border-b-4 border-green-800 active:border-0 active:translate-y-1">Создать</button>
                             <button id="joinGameBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm font-bold transition shadow border-b-4 border-blue-800 active:border-0 active:translate-y-1">Войти</button>
                         </div>
+                        
+                        <!-- Индикатор статуса подключения (для ТГ) -->
+                        <div id="connection-status" class="text-xs text-yellow-500 mb-2 hidden"><i class="fas fa-circle-notch fa-spin"></i> Подключение к серверу...</div>
+
                         <div id="room-input-container" class="hidden animate-fade-in">
                             <input type="text" id="roomIdInput" placeholder="Введите ID комнаты" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white mb-2 text-center uppercase tracking-widest">
                             <button id="confirmJoinBtn" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm font-bold">Подключиться</button>
@@ -140,7 +129,7 @@
                 </div>
             </div>
 
-            <!-- История ходов -->
+            <!-- Лог -->
             <div class="bg-gray-700 p-4 rounded-lg flex-1 overflow-hidden flex flex-col min-h-[200px]">
                 <h3 class="font-bold mb-2 text-sm text-gray-300">История ходов</h3>
                 <div id="pgn-log" class="flex-1 overflow-y-auto text-sm font-mono bg-gray-900 p-2 rounded text-gray-400 border border-gray-600">
@@ -167,14 +156,12 @@
         Игра началась! Ваш ход.
     </div>
 
-    <!-- --- Основной код --- -->
     <script>
-        // --- Диагностика загрузки ---
         function checkLibraries() {
             var missing = [];
-            if (typeof jQuery === 'undefined') missing.push('jQuery (Базовая библиотека)');
-            if (typeof Chess === 'undefined') missing.push('Chess.js (Логика шахмат)');
-            if (typeof Chessboard === 'undefined') missing.push('Chessboard.js (Визуализация)');
+            if (typeof jQuery === 'undefined') missing.push('jQuery');
+            if (typeof Chess === 'undefined') missing.push('Chess.js');
+            if (typeof Chessboard === 'undefined') missing.push('Chessboard.js');
             
             if (missing.length > 0) {
                 var list = document.getElementById('missing-libs');
@@ -184,59 +171,45 @@
                     list.appendChild(li);
                 });
                 document.getElementById('error-box').classList.remove('hidden');
-                document.getElementById('status').textContent = "Критическая ошибка загрузки";
+                document.getElementById('status').textContent = "Ошибка библиотек";
                 document.getElementById('status').classList.add('bg-red-600');
-                throw new Error("Библиотеки не загружены: " + missing.join(', '));
             }
         }
 
-        // Глобальные переменные
         var board = null;
         var game = null;
         var isAiMode = true;
         var aiDepth = 2;
         var currentRoom = null;
         var playerColor = 'w';
-        
         var firebaseAvailable = false;
         
         var firebaseActions = {
-            createGame: async () => showModal('Загрузка...', 'Модуль онлайн игры еще подключается.'),
-            joinGame: async () => showModal('Загрузка...', 'Модуль онлайн игры еще подключается.'),
-            sendMove: async (fen) => console.log('Оффлайн ход')
+            createGame: async () => showModal('Подождите', 'Модуль онлайн игры подключается...'),
+            joinGame: async () => showModal('Подождите', 'Модуль онлайн игры подключается...'),
+            sendMove: async (fen) => console.log('Offline move')
         };
 
-        // --- Инициализация ---
         window.onload = function() {
             try {
-                checkLibraries(); // Проверяем, всё ли скачалось
-
+                checkLibraries();
                 game = new Chess();
                 
-                // Настройка доски
-                // Если картинки не грузятся, можно попробовать поменять pieceTheme
                 var config = {
                     draggable: true,
                     position: 'start',
                     onDragStart: onDragStart,
                     onDrop: onDrop,
                     onSnapEnd: onSnapEnd,
-                    // Самый надежный источник картинок - официальный сайт
                     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
                 };
                 
-                // Создание доски
                 board = Chessboard('myBoard', config);
-                
-                // Фикс размеров
                 $(window).resize(board.resize);
-                setTimeout(() => { if(board) board.resize(); }, 200);
-                setTimeout(() => { if(board) board.resize(); }, 1000);
+                setTimeout(() => { if(board) board.resize(); }, 500);
 
                 updateStatus();
-                console.log("Логика шахмат инициализирована успешно.");
                 
-                // Привязка кнопок
                 $('#gameMode').change(onModeChange);
                 $('#startAiGame').click(startAiGame);
                 $('#resetBtn').click(resetBoardAction);
@@ -247,16 +220,10 @@
                 $('#status').text("Готово к игре!");
 
             } catch (err) {
-                console.error("Critical Init Error:", err);
-                // Ошибка уже показана в checkLibraries, либо здесь
-                if (document.getElementById('missing-libs').children.length === 0) {
-                   $('#status').text("Ошибка: " + err.message).addClass('text-red-500 bg-red-100');
-                }
+                console.error("Init Error:", err);
             }
         };
 
-        // --- Функции интерфейса ---
-        
         function onModeChange() {
             const mode = $(this).val();
             if (mode === 'ai') {
@@ -270,7 +237,9 @@
                 $('#multiplayer-controls').removeClass('hidden');
                 isAiMode = false;
                 resetGame();
-                if (!firebaseAvailable) showToast("Поиск соединения...");
+                if (!firebaseAvailable) {
+                    $('#connection-status').removeClass('hidden');
+                }
             }
         }
 
@@ -291,43 +260,28 @@
             $('#joinGameBtn').removeClass('opacity-50');
         }
 
-        // --- Логика шахмат ---
-
         function onDragStart(source, piece, position, orientation) {
             if (!game || game.game_over()) return false;
-
             if (isAiMode) {
                 if (piece.search(/^b/) !== -1) return false;
             } else {
                 if ((orientation === 'white' && piece.search(/^w/) === -1) ||
-                    (orientation === 'black' && piece.search(/^b/) === -1)) {
-                    return false;
-                }
+                    (orientation === 'black' && piece.search(/^b/) === -1)) return false;
                 if ((game.turn() === 'w' && orientation !== 'white') ||
-                    (game.turn() === 'b' && orientation !== 'black')) {
-                    return false;
-                }
+                    (game.turn() === 'b' && orientation !== 'black')) return false;
             }
         }
 
         function onDrop(source, target) {
-            var move = game.move({
-                from: source,
-                to: target,
-                promotion: 'q'
-            });
-
+            var move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback';
-
             updateStatus();
             updateLog();
 
             if (isAiMode) {
                 window.setTimeout(makeAiMove, 250);
             } else {
-                if (currentRoom) {
-                    firebaseActions.sendMove(game.fen());
-                }
+                if (currentRoom) firebaseActions.sendMove(game.fen());
             }
         }
 
@@ -345,14 +299,13 @@
                 showModal('Игра окончена', status);
             } else if (game.in_draw()) {
                 status = 'Ничья!';
-                showModal('Игра окончена', 'Ничья (Пат или материал)');
+                showModal('Игра окончена', 'Ничья');
             } else {
                 status = 'Ход ' + moveColor;
                 if (game.in_check()) status += ', Шах!';
             }
 
             $('#status').text(status);
-            
             if(game.turn() === 'w') {
                 $('#status').removeClass('bg-gray-900 text-white').addClass('bg-gray-200 text-gray-900');
             } else {
@@ -377,17 +330,12 @@
             $('#pgn-log').text('Новая игра...');
         }
 
-        // --- AI (Упрощенный Minimax) ---
-
         function makeAiMove() {
             if (game.game_over()) return;
-
             var depth = aiDepth; 
             if (aiDepth === 1) depth = 1;
 
-            // Небольшой хак: на 1 уровне иногда делать случайный ход
             var bestMove = minimaxRoot(depth, game, true);
-            
             if (!bestMove) {
                  var moves = game.moves();
                  if(moves.length > 0) bestMove = moves[Math.floor(Math.random() * moves.length)];
@@ -479,7 +427,6 @@
             return piece.color === 'w' ? absoluteValue : -absoluteValue;
         }
 
-        // Оценочные таблицы (сокращенные для экономии места, но функциональные)
         var pawnEvalWhite = [[0,0,0,0,0,0,0,0],[5,5,5,5,5,5,5,5],[1,1,2,3,3,2,1,1],[0.5,0.5,1,2.5,2.5,1,0.5,0.5],[0,0,0,2,2,0,0,0],[0.5,-0.5,-1,0,0,-1,-0.5,0.5],[0.5,1,1,-2,-2,1,1,0.5],[0,0,0,0,0,0,0,0]];
         var pawnEvalBlack = pawnEvalWhite.slice().reverse();
         var knightEval = [[-5,-4,-3,-3,-3,-3,-4,-5],[-4,-2,0,0,0,0,-2,-4],[-3,0,1,1.5,1.5,1,0,-3],[-3,0.5,1.5,2,2,1.5,0.5,-3],[-3,0,1.5,2,2,1.5,0,-3],[-3,0.5,1,1.5,1.5,1,0.5,-3],[-4,-2,0,0.5,0.5,0,-2,-4],[-5,-4,-3,-3,-3,-3,-4,-5]];
@@ -491,17 +438,15 @@
         var kingEvalWhite = [[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-2,-3,-3,-4,-4,-3,-3,-2],[-1,-2,-2,-2,-2,-2,-2,-1],[2,2,0,0,0,0,2,2],[2,3,1,0,0,1,3,2]];
         var kingEvalBlack = kingEvalWhite.slice().reverse();
 
-        // Helpers
         window.closeModal = function() { $('#modal').addClass('hidden'); }
         window.showModal = function(title, msg) { $('#modal-title').text(title); $('#modal-msg').text(msg); $('#modal').removeClass('hidden'); }
         window.showToast = function(msg) { const t = $('#toast'); t.text(msg); t.removeClass('opacity-0').addClass('opacity-100'); setTimeout(() => { t.removeClass('opacity-100').addClass('opacity-0'); }, 3000); }
         window.copyToClipboard = function(text) { const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast('ID скопирован: ' + text); }
     </script>
 
-    <!-- --- Firebase (Онлайн) --- -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, inMemoryPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         (async function initFirebase() {
@@ -522,21 +467,44 @@
                     if (user) {
                         currentUser = user;
                         firebaseAvailable = true;
-                        console.log("Онлайн модуль готов");
+                        $('#connection-status').addClass('hidden');
+                        console.log("Онлайн модуль готов (UID: " + user.uid + ")");
                     }
                 });
                 
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                // ТАЙМАУТ ПОДКЛЮЧЕНИЯ (Для ТГ)
+                const connectionTimeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Timeout")), 7000)
+                );
+
+                try {
+                    // Попытка авторизации
+                    const authPromise = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token)
+                        ? signInWithCustomToken(auth, __initial_auth_token)
+                        : signInAnonymously(auth);
+
+                    await Promise.race([authPromise, connectionTimeout]);
+
+                } catch (err) {
+                    console.warn("Standard Auth failed/timeout, trying InMemory:", err);
+                    // ФОЛЛБЭК ДЛЯ TELEGRAM/INSTAGRAM WEBVIEW
+                    // Если обычный вход завис или упал, пробуем без сохранения сессии
+                    try {
+                        await setPersistence(auth, inMemoryPersistence);
+                        await signInAnonymously(auth);
+                    } catch (err2) {
+                        console.error("Critical Auth Error:", err2);
+                        // Если и это не помогло, переопределяем кнопки на ошибку
+                        window.firebaseActions.createGame = async () => showModal('Ошибка', 'Онлайн недоступен в этом браузере.');
+                        window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Онлайн недоступен в этом браузере.');
+                        $('#connection-status').text("Ошибка подключения (Offline)").addClass('text-red-500').removeClass('hidden text-yellow-500');
+                        return;
+                    }
                 }
 
-                // Переопределение функций
                 window.firebaseActions.createGame = async function() {
                     if (!currentUser) { showModal('Ошибка', 'Нет соединения.'); return; }
                     const roomId = Math.random().toString(36).substring(2, 7).toUpperCase();
-                    // FIX: Разбиваем путь на 6 сегментов: artifacts -> appId -> public -> data -> games -> roomId
                     const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', roomId);
                     
                     try {
@@ -561,7 +529,6 @@
                     const inputId = $('#roomIdInput').val().trim().toUpperCase();
                     if (inputId.length < 3) return;
 
-                    // FIX: Исправляем путь и здесь (добавляем 'games' отдельным аргументом)
                     const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', inputId);
                     try {
                         const snap = await getDoc(gameRef);
@@ -582,13 +549,11 @@
 
                 window.firebaseActions.sendMove = async function(fen) {
                     if (!currentRoom) return;
-                    // FIX: Исправляем путь отправки хода
                     const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', currentRoom);
                     await updateDoc(gameRef, { fen: fen, lastMoveTime: new Date() }).catch(e => console.log(e));
                 };
 
                 function listenToGame(roomId) {
-                    // FIX: Исправляем путь слушателя
                     const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', roomId);
                     if (unsubscribeRoom) unsubscribeRoom();
                     unsubscribeRoom = onSnapshot(gameRef, (doc) => {
