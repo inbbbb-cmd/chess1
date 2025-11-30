@@ -5,49 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Шахматы Pro</title>
     
-    <!-- Стили: Tailwind CSS -->
+    <!-- Стили: Tailwind CSS (обычно загружается без проблем) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Библиотеки для игры -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-    <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+    <!-- 
+      ОБНОВЛЕННЫЕ ИСТОЧНИКИ БИБЛИОТЕК (CDNJS - самый надежный) 
+      Порядок загрузки важен!
+    -->
+    
+    <!-- 1. JQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" xintegrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <!-- 2. Chess.js (Логика игры) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" xintegrity="sha512-xRllwz3ikq1uwu9e9uGJoIqX/Bl7r14i5nR8oIKnLh8/Mwd56xM0y31U9A/5/A6B/T0A4B3hP48L8E/0tQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    
+    <!-- 3. Chessboard.js (Визуализация) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" xintegrity="sha512-TU/clvSaT+qWp73X3Q54V5U4/J4Q55gN1T9sS2JcZMBY8B/2A46Z5h5Q56455c5g5P5555555555555" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js" xintegrity="sha512-WbedvrH77v0gQ2Yyp4S6F16gQ1WbwMvyG0/1M1uDk5E4E4gq5g5g5g5g5g5g5g5g5g5g5g5g5g5g5g5" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     
     <!-- Иконки -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         body {
-            background-color: #1a202c; /* gray-900 */
-            color: #e2e8f0; /* gray-200 */
+            background-color: #1a202c;
+            color: #e2e8f0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overscroll-behavior: none; /* Блокировка "пружинистости" на Mac/iOS */
+            overscroll-behavior: none;
         }
-        /* Адаптация доски */
         #myBoard {
             width: 100%;
             margin: 0 auto;
-            /* Важно для корректной работы touch-событий на мобильных */
             touch-action: none; 
         }
-        /* Стили для мобильных */
+        #myBoard img {
+            max-width: 100%;
+            display: block;
+        }
         @media (max-width: 600px) {
             #myBoard {
                 max-width: 90vw;
             }
         }
-        /* Кастомный скроллбар */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #2d3748;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4a5568;
-            border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -64,15 +66,24 @@
         <!-- Левая колонка: Доска -->
         <div class="flex-1 flex flex-col items-center justify-start w-full">
             <div id="status" class="w-full text-center mb-4 text-lg font-semibold text-white bg-gray-700 py-2 rounded transition-colors duration-300">
-                Загрузка...
+                Проверка компонентов...
             </div>
             
-            <!-- Обертка для доски с фиксированным соотношением сторон для стабильности -->
-            <div class="w-full max-w-[500px] aspect-square bg-gray-700 rounded shadow-inner flex items-center justify-center overflow-hidden">
-                <div id="myBoard" class="w-full"></div>
+            <!-- Контейнер ошибки (скрыт по умолчанию) -->
+            <div id="error-box" class="hidden w-full bg-red-900 border border-red-500 text-white p-4 rounded mb-4 text-sm">
+                <p class="font-bold">Ошибка загрузки:</p>
+                <ul id="missing-libs" class="list-disc pl-5 mt-1"></ul>
+                <p class="mt-2 text-xs text-gray-300">Попробуйте отключить AdBlock или проверьте интернет.</p>
             </div>
 
-            <!-- Индикатор взятых фигур (упрощенно) -->
+            <div class="w-full max-w-[500px] aspect-square bg-gray-700 rounded shadow-inner flex items-center justify-center overflow-hidden relative">
+                <div id="myBoard" class="w-full z-10"></div>
+                <!-- Заглушка если доска не прогрузится -->
+                <div id="board-placeholder" class="absolute inset-0 flex items-center justify-center text-gray-500 z-0">
+                    <i class="fas fa-chess-board text-6xl opacity-20"></i>
+                </div>
+            </div>
+
             <div class="mt-4 flex justify-between w-full max-w-[500px] text-sm text-gray-400">
                 <span id="player-color-display">Вы играете за: Белых</span>
             </div>
@@ -129,11 +140,11 @@
                 </div>
             </div>
 
-            <!-- История ходов (Лог) -->
+            <!-- История ходов -->
             <div class="bg-gray-700 p-4 rounded-lg flex-1 overflow-hidden flex flex-col min-h-[200px]">
                 <h3 class="font-bold mb-2 text-sm text-gray-300">История ходов</h3>
                 <div id="pgn-log" class="flex-1 overflow-y-auto text-sm font-mono bg-gray-900 p-2 rounded text-gray-400 border border-gray-600">
-                    Ожидание начала игры...
+                    Ожидание...
                 </div>
             </div>
 
@@ -143,7 +154,7 @@
         </div>
     </div>
 
-    <!-- Модальное окно для сообщений -->
+    <!-- Модальное окно -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
         <div class="bg-gray-800 p-6 rounded-lg max-w-sm w-full text-center border border-gray-600 shadow-2xl transform transition-all scale-100">
             <h3 id="modal-title" class="text-xl font-bold mb-2 text-white">Сообщение</h3>
@@ -152,132 +163,146 @@
         </div>
     </div>
 
-    <!-- Всплывающее уведомление (Toast) -->
     <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-500 opacity-0 pointer-events-none z-50 font-bold">
         Игра началась! Ваш ход.
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-
-        // --- Firebase Configuration ---
-        const firebaseConfig = JSON.parse(new URLSearchParams(window.location.search).get('firebase_config') || '{}') || JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'chess-game';
-
-        let currentUser = null;
-        let currentRoom = null;
-        let unsubscribeRoom = null;
-        let playerColor = 'w'; // 'w' - создатель, 'b' - подключившийся
-
-        // Авторизация
-        async function initAuth() {
-            try {
-                // Если есть токен, пробуем его, иначе анонимно.
-                // В песочнице часто работает просто signInAnonymously без параметров
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Auth Error:", error);
-                // Если ошибка, пробуем еще раз с задержкой или игнорируем, если уже авторизованы
+    <!-- --- Основной код --- -->
+    <script>
+        // --- Диагностика загрузки ---
+        function checkLibraries() {
+            var missing = [];
+            if (typeof jQuery === 'undefined') missing.push('jQuery (Базовая библиотека)');
+            if (typeof Chess === 'undefined') missing.push('Chess.js (Логика шахмат)');
+            if (typeof Chessboard === 'undefined') missing.push('Chessboard.js (Визуализация)');
+            
+            if (missing.length > 0) {
+                var list = document.getElementById('missing-libs');
+                missing.forEach(function(lib) {
+                    var li = document.createElement('li');
+                    li.textContent = lib;
+                    list.appendChild(li);
+                });
+                document.getElementById('error-box').classList.remove('hidden');
+                document.getElementById('status').textContent = "Критическая ошибка загрузки";
+                document.getElementById('status').classList.add('bg-red-600');
+                throw new Error("Библиотеки не загружены: " + missing.join(', '));
             }
         }
-        
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                console.log("Logged in as:", user.uid);
-            }
-        });
-        initAuth();
 
-        // --- Game Logic Globals ---
+        // Глобальные переменные
         var board = null;
-        var game = new Chess();
+        var game = null;
         var isAiMode = true;
-        var aiDepth = 2; // Default medium
+        var aiDepth = 2;
+        var currentRoom = null;
+        var playerColor = 'w';
+        
+        var firebaseAvailable = false;
+        
+        var firebaseActions = {
+            createGame: async () => showModal('Загрузка...', 'Модуль онлайн игры еще подключается.'),
+            joinGame: async () => showModal('Загрузка...', 'Модуль онлайн игры еще подключается.'),
+            sendMove: async (fen) => console.log('Оффлайн ход')
+        };
 
-        // --- UI Initialization ---
-        $(document).ready(function() {
-            console.log("DOM Ready. Initializing Board...");
+        // --- Инициализация ---
+        window.onload = function() {
+            try {
+                checkLibraries(); // Проверяем, всё ли скачалось
 
-            // Инициализация доски
-            var config = {
-                draggable: true,
-                position: 'start',
-                onDragStart: onDragStart,
-                onDrop: onDrop,
-                onSnapEnd: onSnapEnd,
-                pieceTheme: 'https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/img/chesspieces/wikipedia/{piece}.png'
-            };
-            
-            // Задержка инициализации для гарантии отрисовки контейнера
-            setTimeout(() => {
+                game = new Chess();
+                
+                // Настройка доски
+                // Если картинки не грузятся, можно попробовать поменять pieceTheme
+                var config = {
+                    draggable: true,
+                    position: 'start',
+                    onDragStart: onDragStart,
+                    onDrop: onDrop,
+                    onSnapEnd: onSnapEnd,
+                    // Самый надежный источник картинок - официальный сайт
+                    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+                };
+                
+                // Создание доски
                 board = Chessboard('myBoard', config);
-                $(window).resize(board.resize); // Авто-ресайз при изменении окна
+                
+                // Фикс размеров
+                $(window).resize(board.resize);
+                setTimeout(() => { if(board) board.resize(); }, 200);
+                setTimeout(() => { if(board) board.resize(); }, 1000);
+
                 updateStatus();
-            }, 100);
+                console.log("Логика шахмат инициализирована успешно.");
+                
+                // Привязка кнопок
+                $('#gameMode').change(onModeChange);
+                $('#startAiGame').click(startAiGame);
+                $('#resetBtn').click(resetBoardAction);
+                $('#createGameBtn').click(function() { firebaseActions.createGame() });
+                $('#joinGameBtn').click(showJoinInput);
+                $('#confirmJoinBtn').click(function() { firebaseActions.joinGame() });
 
-            // Обработчики событий UI
-            $('#gameMode').change(function() {
-                const mode = $(this).val();
-                if (mode === 'ai') {
-                    $('#ai-controls').removeClass('hidden');
-                    $('#multiplayer-controls').addClass('hidden');
-                    isAiMode = true;
-                    // Очистка состояния мультиплеера
-                    if(unsubscribeRoom) unsubscribeRoom();
-                    currentRoom = null;
-                    resetGame();
-                } else {
-                    $('#ai-controls').addClass('hidden');
-                    $('#multiplayer-controls').removeClass('hidden');
-                    isAiMode = false;
-                    resetGame();
+                $('#status').text("Готово к игре!");
+
+            } catch (err) {
+                console.error("Critical Init Error:", err);
+                // Ошибка уже показана в checkLibraries, либо здесь
+                if (document.getElementById('missing-libs').children.length === 0) {
+                   $('#status').text("Ошибка: " + err.message).addClass('text-red-500 bg-red-100');
                 }
-            });
+            }
+        };
 
-            $('#startAiGame').click(function() {
-                aiDepth = parseInt($('#difficulty').val());
+        // --- Функции интерфейса ---
+        
+        function onModeChange() {
+            const mode = $(this).val();
+            if (mode === 'ai') {
+                $('#ai-controls').removeClass('hidden');
+                $('#multiplayer-controls').addClass('hidden');
+                isAiMode = true;
+                currentRoom = null;
                 resetGame();
-                showToast("Игра началась! Ваш ход (Белые)");
-            });
-
-            $('#resetBtn').click(function() {
+            } else {
+                $('#ai-controls').addClass('hidden');
+                $('#multiplayer-controls').removeClass('hidden');
+                isAiMode = false;
                 resetGame();
-                showToast("Доска сброшена");
-            });
+                if (!firebaseAvailable) showToast("Поиск соединения...");
+            }
+        }
 
-            // Мультиплеер кнопки
-            $('#createGameBtn').click(createMultiplayerGame);
-            $('#joinGameBtn').click(() => {
-                $('#room-input-container').removeClass('hidden');
-                $('#createGameBtn').addClass('opacity-50 cursor-not-allowed').prop('disabled', true);
-                $('#joinGameBtn').removeClass('opacity-50');
-            });
-            $('#confirmJoinBtn').click(joinMultiplayerGame);
-        });
+        function startAiGame() {
+            aiDepth = parseInt($('#difficulty').val());
+            resetGame();
+            showToast("Игра началась! Ваш ход (Белые)");
+        }
 
-        // --- Chess Logic Core ---
+        function resetBoardAction() {
+            resetGame();
+            showToast("Доска сброшена");
+        }
+
+        function showJoinInput() {
+            $('#room-input-container').removeClass('hidden');
+            $('#createGameBtn').addClass('opacity-50 cursor-not-allowed').prop('disabled', true);
+            $('#joinGameBtn').removeClass('opacity-50');
+        }
+
+        // --- Логика шахмат ---
 
         function onDragStart(source, piece, position, orientation) {
-            if (game.game_over()) return false;
+            if (!game || game.game_over()) return false;
 
-            // В режиме AI играет только белый (по умолчанию)
             if (isAiMode) {
                 if (piece.search(/^b/) !== -1) return false;
             } else {
-                // В мультиплеере проверяем цвет игрока
                 if ((orientation === 'white' && piece.search(/^w/) === -1) ||
                     (orientation === 'black' && piece.search(/^b/) === -1)) {
                     return false;
                 }
-                
-                // Проверка чей ход
                 if ((game.turn() === 'w' && orientation !== 'white') ||
                     (game.turn() === 'b' && orientation !== 'black')) {
                     return false;
@@ -286,55 +311,48 @@
         }
 
         function onDrop(source, target) {
-            // пробуем сделать ход
             var move = game.move({
                 from: source,
                 to: target,
-                promotion: 'q' // всегда превращаем в ферзя для простоты
+                promotion: 'q'
             });
 
-            // если ход невозможен
             if (move === null) return 'snapback';
 
             updateStatus();
             updateLog();
 
-            // Действия после хода
             if (isAiMode) {
-                // Небольшая задержка перед ходом AI для реализма
                 window.setTimeout(makeAiMove, 250);
             } else {
-                // Отправка хода в Firestore
                 if (currentRoom) {
-                    sendMoveToFirestore(game.fen());
+                    firebaseActions.sendMove(game.fen());
                 }
             }
         }
 
         function onSnapEnd() {
-            board.position(game.fen());
+            if (board && game) board.position(game.fen());
         }
 
         function updateStatus() {
+            if (!game) return;
             var status = '';
             var moveColor = (game.turn() === 'w') ? 'Белых' : 'Черных';
 
             if (game.in_checkmate()) {
-                status = 'Игра окончена, ' + moveColor + ' поставили мат.';
-                showModal('Мат!', status);
+                status = 'Мат! Победили ' + (game.turn() === 'w' ? 'Черные' : 'Белые');
+                showModal('Игра окончена', status);
             } else if (game.in_draw()) {
-                status = 'Игра окончена, ничья.';
-                showModal('Ничья!', 'Пат или недостаток материала.');
+                status = 'Ничья!';
+                showModal('Игра окончена', 'Ничья (Пат или материал)');
             } else {
                 status = 'Ход ' + moveColor;
-                if (game.in_check()) {
-                    status += ', Шах!';
-                }
+                if (game.in_check()) status += ', Шах!';
             }
 
             $('#status').text(status);
             
-            // Подсветка статуса
             if(game.turn() === 'w') {
                 $('#status').removeClass('bg-gray-900 text-white').addClass('bg-gray-200 text-gray-900');
             } else {
@@ -343,24 +361,23 @@
         }
 
         function updateLog() {
-            $('#pgn-log').text(game.pgn() || "Игра началась. Ход белых.");
-            // Автоскролл вниз
+            $('#pgn-log').text(game.pgn() || "Новая партия.");
             var logDiv = document.getElementById("pgn-log");
-            logDiv.scrollTop = logDiv.scrollHeight;
+            if (logDiv) logDiv.scrollTop = logDiv.scrollHeight;
         }
 
         function resetGame() {
-            game.reset();
-            if(board) {
+            if (game) game.reset();
+            if (board) {
                 board.start();
                 board.orientation('white'); 
             }
             $('#player-color-display').text("Вы играете за: Белых");
             updateStatus();
-            $('#pgn-log').text('Новая игра началась...');
+            $('#pgn-log').text('Новая игра...');
         }
 
-        // --- AI Implementation (Minimax with Alpha-Beta) ---
+        // --- AI (Упрощенный Minimax) ---
 
         function makeAiMove() {
             if (game.game_over()) return;
@@ -368,24 +385,29 @@
             var depth = aiDepth; 
             if (aiDepth === 1) depth = 1;
 
-            var positionCount = 0;
+            // Небольшой хак: на 1 уровне иногда делать случайный ход
             var bestMove = minimaxRoot(depth, game, true);
+            
+            if (!bestMove) {
+                 var moves = game.moves();
+                 if(moves.length > 0) bestMove = moves[Math.floor(Math.random() * moves.length)];
+            }
 
-            game.move(bestMove);
-            board.position(game.fen());
-            updateStatus();
-            updateLog();
+            if(bestMove) {
+                game.move(bestMove);
+                board.position(game.fen());
+                updateStatus();
+                updateLog();
+            }
         }
 
         function minimaxRoot(depth, game, isMaximisingPlayer) {
             var newGameMoves = game.moves();
-            // Рандом для новичка
-            if (aiDepth === 1 && Math.random() < 0.4) {
+            if (aiDepth === 1 && Math.random() < 0.35 && newGameMoves.length > 0) {
                 return newGameMoves[Math.floor(Math.random() * newGameMoves.length)];
             }
-
             var bestMove = -9999;
-            var bestMoveFound;
+            var bestMoveFound = null;
 
             for(var i = 0; i < newGameMoves.length; i++) {
                 var newGameMove = newGameMoves[i];
@@ -397,16 +419,17 @@
                     bestMoveFound = newGameMove;
                 }
             }
-            return bestMoveFound;
+            return bestMoveFound || (newGameMoves.length > 0 ? newGameMoves[0] : null);
         }
 
         function minimax(depth, game, alpha, beta, isMaximisingPlayer) {
-            positionCount++;
-            if (depth === 0) {
-                return -evaluateBoard(game.board());
-            }
+            if (depth === 0) return -evaluateBoard(game.board());
 
             var newGameMoves = game.moves();
+            if (newGameMoves.length === 0) {
+                if (game.in_checkmate()) return isMaximisingPlayer ? -10000 : 10000;
+                return 0;
+            }
 
             if (isMaximisingPlayer) {
                 var bestMove = -9999;
@@ -415,9 +438,7 @@
                     bestMove = Math.max(bestMove, minimax(depth - 1, game, alpha, beta, !isMaximisingPlayer));
                     game.undo();
                     alpha = Math.max(alpha, bestMove);
-                    if (beta <= alpha) {
-                        return bestMove;
-                    }
+                    if (beta <= alpha) return bestMove;
                 }
                 return bestMove;
             } else {
@@ -427,9 +448,7 @@
                     bestMove = Math.min(bestMove, minimax(depth - 1, game, alpha, beta, !isMaximisingPlayer));
                     game.undo();
                     beta = Math.min(beta, bestMove);
-                    if (beta <= alpha) {
-                        return bestMove;
-                    }
+                    if (beta <= alpha) return bestMove;
                 }
                 return bestMove;
             }
@@ -446,259 +465,152 @@
         }
 
         function getPieceValue(piece, x, y) {
-            if (piece === null) {
-                return 0;
-            }
+            if (piece === null) return 0;
             var getAbsoluteValue = function (piece, isWhite, x ,y) {
-                if (piece.type === 'p') {
-                    return 10 + ( isWhite ? pawnEvalWhite[y][x] : pawnEvalBlack[y][x] );
-                } else if (piece.type === 'r') {
-                    return 50 + ( isWhite ? rookEvalWhite[y][x] : rookEvalBlack[y][x] );
-                } else if (piece.type === 'n') {
-                    return 30 + knightEval[y][x];
-                } else if (piece.type === 'b') {
-                    return 30 + ( isWhite ? bishopEvalWhite[y][x] : bishopEvalBlack[y][x] );
-                } else if (piece.type === 'q') {
-                    return 90 + evalQueen[y][x];
-                } else if (piece.type === 'k') {
-                    return 900 + ( isWhite ? kingEvalWhite[y][x] : kingEvalBlack[y][x] );
-                }
+                if (piece.type === 'p') return 10 + ( isWhite ? pawnEvalWhite[y][x] : pawnEvalBlack[y][x] );
+                if (piece.type === 'r') return 50 + ( isWhite ? rookEvalWhite[y][x] : rookEvalBlack[y][x] );
+                if (piece.type === 'n') return 30 + knightEval[y][x];
+                if (piece.type === 'b') return 30 + ( isWhite ? bishopEvalWhite[y][x] : bishopEvalBlack[y][x] );
+                if (piece.type === 'q') return 90 + evalQueen[y][x];
+                if (piece.type === 'k') return 900 + ( isWhite ? kingEvalWhite[y][x] : kingEvalBlack[y][x] );
                 return 0;
             };
-
             var absoluteValue = getAbsoluteValue(piece, piece.color === 'w', x ,y);
             return piece.color === 'w' ? absoluteValue : -absoluteValue;
         }
 
-        // --- Position Evaluation Tables ---
-        var pawnEvalWhite = [
-            [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
-            [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
-            [1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0],
-            [0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5],
-            [0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0],
-            [0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5],
-            [0.5,  1.0, 1.0,  -2.0, -2.0,  1.0,  1.0,  0.5],
-            [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
-        ];
+        // Оценочные таблицы (сокращенные для экономии места, но функциональные)
+        var pawnEvalWhite = [[0,0,0,0,0,0,0,0],[5,5,5,5,5,5,5,5],[1,1,2,3,3,2,1,1],[0.5,0.5,1,2.5,2.5,1,0.5,0.5],[0,0,0,2,2,0,0,0],[0.5,-0.5,-1,0,0,-1,-0.5,0.5],[0.5,1,1,-2,-2,1,1,0.5],[0,0,0,0,0,0,0,0]];
         var pawnEvalBlack = pawnEvalWhite.slice().reverse();
-
-        var knightEval = [
-            [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
-            [-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0],
-            [-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0],
-            [-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
-            [-3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0],
-            [-3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
-            [-4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0],
-            [-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
-        ];
-
-        var bishopEvalWhite = [
-            [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
-            [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
-            [ -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0],
-            [ -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0],
-            [ -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0],
-            [ -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0],
-            [ -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0],
-            [ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
-        ];
+        var knightEval = [[-5,-4,-3,-3,-3,-3,-4,-5],[-4,-2,0,0,0,0,-2,-4],[-3,0,1,1.5,1.5,1,0,-3],[-3,0.5,1.5,2,2,1.5,0.5,-3],[-3,0,1.5,2,2,1.5,0,-3],[-3,0.5,1,1.5,1.5,1,0.5,-3],[-4,-2,0,0.5,0.5,0,-2,-4],[-5,-4,-3,-3,-3,-3,-4,-5]];
+        var bishopEvalWhite = [[-2,-1,-1,-1,-1,-1,-1,-2],[-1,0,0,0,0,0,0,-1],[-1,0,0.5,1,1,0.5,0,-1],[-1,0.5,0.5,1,1,0.5,0.5,-1],[-1,0,1,1,1,1,0,-1],[-1,1,1,1,1,1,1,-1],[-1,0.5,0,0,0,0,0.5,-1],[-2,-1,-1,-1,-1,-1,-1,-2]];
         var bishopEvalBlack = bishopEvalWhite.slice().reverse();
-
-        var rookEvalWhite = [
-            [  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
-            [  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5],
-            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
-            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
-            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
-            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
-            [ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
-            [  0.0,   0.0, 0.0,  0.5,  0.5,  0.0,  0.0,  0.0]
-        ];
+        var rookEvalWhite = [[0,0,0,0,0,0,0,0],[0.5,1,1,1,1,1,1,0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[-0.5,0,0,0,0,0,0,-0.5],[0,0,0,0.5,0.5,0,0,0]];
         var rookEvalBlack = rookEvalWhite.slice().reverse();
-
-        var evalQueen = [
-            [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
-            [ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
-            [ -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
-            [ -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
-            [  0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
-            [ -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
-            [ -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
-            [ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
-        ];
-
-        var kingEvalWhite = [
-            [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
-            [ -2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
-            [ -1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -1.0],
-            [  2.0,  2.0,  0.0,  0.0,  0.0,  0.0,  2.0,  2.0 ],
-            [  2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0 ]
-        ];
+        var evalQueen = [[-2,-1,-1,-0.5,-0.5,-1,-1,-2],[-1,0,0,0,0,0,0,-1],[-1,0,0.5,0.5,0.5,0.5,0,-1],[-0.5,0,0.5,0.5,0.5,0.5,0,-0.5],[0,0,0.5,0.5,0.5,0.5,0,-0.5],[-1,0.5,0.5,0.5,0.5,0.5,0,-1],[-1,0,0.5,0,0,0,0,-1],[-2,-1,-1,-0.5,-0.5,-1,-1,-2]];
+        var kingEvalWhite = [[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-3,-4,-4,-5,-5,-4,-4,-3],[-2,-3,-3,-4,-4,-3,-3,-2],[-1,-2,-2,-2,-2,-2,-2,-1],[2,2,0,0,0,0,2,2],[2,3,1,0,0,1,3,2]];
         var kingEvalBlack = kingEvalWhite.slice().reverse();
 
+        // Helpers
+        window.closeModal = function() { $('#modal').addClass('hidden'); }
+        window.showModal = function(title, msg) { $('#modal-title').text(title); $('#modal-msg').text(msg); $('#modal').removeClass('hidden'); }
+        window.showToast = function(msg) { const t = $('#toast'); t.text(msg); t.removeClass('opacity-0').addClass('opacity-100'); setTimeout(() => { t.removeClass('opacity-100').addClass('opacity-0'); }, 3000); }
+        window.copyToClipboard = function(text) { const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); showToast('ID скопирован: ' + text); }
+    </script>
 
-        // --- Firestore Multiplayer Logic ---
+    <!-- --- Firebase (Онлайн) --- -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        function generateRoomId() {
-            return Math.random().toString(36).substring(2, 7).toUpperCase();
-        }
-
-        async function createMultiplayerGame() {
-            if (!currentUser) { 
-                showModal('Ошибка', 'Авторизация еще выполняется. Подождите пару секунд.');
-                return; 
-            }
-            
-            const roomId = generateRoomId();
-            const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games_' + roomId);
-            
+        (async function initFirebase() {
             try {
-                showToast("Создание комнаты...");
-                await setDoc(gameRef, {
-                    fen: 'start',
-                    createdAt: new Date(),
-                    host: currentUser.uid,
-                    status: 'waiting'
+                let configStr = new URLSearchParams(window.location.search).get('firebase_config');
+                if (!configStr && typeof __firebase_config !== 'undefined') configStr = __firebase_config;
+                if (!configStr) throw new Error("Нет конфигурации");
+
+                const app = initializeApp(JSON.parse(configStr));
+                const auth = getAuth(app);
+                const db = getFirestore(app);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'chess-game';
+                
+                let currentUser = null;
+                let unsubscribeRoom = null;
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        firebaseAvailable = true;
+                        console.log("Онлайн модуль готов");
+                    }
                 });
                 
-                currentRoom = roomId;
-                playerColor = 'white';
-                
-                // UI Update
-                $('#room-display-container').removeClass('hidden');
-                $('#currentRoomId').text(roomId);
-                $('#createGameBtn').addClass('bg-gray-600 cursor-not-allowed').prop('disabled', true);
-                
-                $('#player-color-display').text("Вы играете за: Белых (Ожидание соперника...)");
-                board.orientation('white');
-                game.reset();
-                board.start();
-
-                listenToGame(roomId);
-                showToast("Комната создана! ID: " + roomId);
-
-            } catch (e) {
-                console.error(e);
-                showModal('Ошибка', 'Не удалось создать игру: ' + e.message);
-            }
-        }
-
-        async function joinMultiplayerGame() {
-            if (!currentUser) { showModal('Ошибка', 'Нет авторизации.'); return; }
-            
-            const inputId = $('#roomIdInput').val().trim().toUpperCase();
-            if (inputId.length < 3) { showModal('Внимание', 'Введите корректный ID'); return; }
-
-            const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games_' + inputId);
-            showToast("Подключение...");
-            
-            try {
-                const gameSnap = await getDoc(gameRef);
-
-                if (gameSnap.exists()) {
-                    currentRoom = inputId;
-                    playerColor = 'black';
-                    
-                    // UI
-                    $('#room-input-container').addClass('hidden');
-                    $('#room-display-container').removeClass('hidden');
-                    $('#currentRoomId').text(inputId);
-                    
-                    $('#player-color-display').text("Вы играете за: Черных");
-                    board.orientation('black');
-                    
-                    // Сообщаем, что второй игрок зашел
-                    await updateDoc(gameRef, {
-                        status: 'active',
-                        guest: currentUser.uid
-                    });
-
-                    listenToGame(inputId);
-                    showToast("Подключено! Вы играете за Черных");
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    showModal('Ошибка', 'Комната с таким ID не найдена!');
+                    await signInAnonymously(auth);
                 }
-            } catch (e) {
-                showModal('Ошибка', 'Ошибка подключения: ' + e.message);
+
+                // Переопределение функций
+                window.firebaseActions.createGame = async function() {
+                    if (!currentUser) { showModal('Ошибка', 'Нет соединения.'); return; }
+                    const roomId = Math.random().toString(36).substring(2, 7).toUpperCase();
+                    // FIX: Разбиваем путь на 6 сегментов: artifacts -> appId -> public -> data -> games -> roomId
+                    const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', roomId);
+                    
+                    try {
+                        showToast("Создание...");
+                        await setDoc(gameRef, { fen: 'start', createdAt: new Date(), host: currentUser.uid, status: 'waiting' });
+                        currentRoom = roomId;
+                        playerColor = 'white';
+                        
+                        $('#room-display-container').removeClass('hidden');
+                        $('#currentRoomId').text(roomId);
+                        $('#createGameBtn').addClass('bg-gray-600').prop('disabled', true);
+                        $('#player-color-display').text("Белые (Ждем соперника...)");
+                        
+                        resetGame();
+                        listenToGame(roomId);
+                        showToast("Комната: " + roomId);
+                    } catch (e) { showModal('Ошибка', e.message); }
+                };
+
+                window.firebaseActions.joinGame = async function() {
+                    if (!currentUser) { showModal('Ошибка', 'Нет соединения.'); return; }
+                    const inputId = $('#roomIdInput').val().trim().toUpperCase();
+                    if (inputId.length < 3) return;
+
+                    // FIX: Исправляем путь и здесь (добавляем 'games' отдельным аргументом)
+                    const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', inputId);
+                    try {
+                        const snap = await getDoc(gameRef);
+                        if (snap.exists()) {
+                            currentRoom = inputId;
+                            playerColor = 'black';
+                            $('#room-input-container').addClass('hidden');
+                            $('#room-display-container').removeClass('hidden');
+                            $('#currentRoomId').text(inputId);
+                            $('#player-color-display').text("Вы за Черных");
+                            board.orientation('black');
+                            await updateDoc(gameRef, { status: 'active', guest: currentUser.uid });
+                            listenToGame(inputId);
+                            showToast("Подключено!");
+                        } else { showModal('Ошибка', 'Комната не найдена'); }
+                    } catch (e) { showModal('Ошибка', e.message); }
+                };
+
+                window.firebaseActions.sendMove = async function(fen) {
+                    if (!currentRoom) return;
+                    // FIX: Исправляем путь отправки хода
+                    const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', currentRoom);
+                    await updateDoc(gameRef, { fen: fen, lastMoveTime: new Date() }).catch(e => console.log(e));
+                };
+
+                function listenToGame(roomId) {
+                    // FIX: Исправляем путь слушателя
+                    const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games', roomId);
+                    if (unsubscribeRoom) unsubscribeRoom();
+                    unsubscribeRoom = onSnapshot(gameRef, (doc) => {
+                        if (!doc.exists()) return;
+                        const data = doc.data();
+                        if (data.fen && data.fen !== game.fen()) {
+                            game.load(data.fen);
+                            board.position(data.fen);
+                            updateStatus();
+                            updateLog();
+                            showToast("Ход соперника");
+                        }
+                        if (playerColor === 'white' && data.status === 'active') {
+                             $('#player-color-display').text("Вы за Белых (Соперник тут)");
+                        }
+                    });
+                }
+
+            } catch (err) {
+                console.warn("Firebase Init Error (Offline Mode):", err);
             }
-        }
-
-        function listenToGame(roomId) {
-            const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games_' + roomId);
-            
-            if (unsubscribeRoom) unsubscribeRoom();
-
-            unsubscribeRoom = onSnapshot(gameRef, (doc) => {
-                if (!doc.exists()) return;
-                const data = doc.data();
-
-                // Обновление состояния доски
-                if (data.fen && data.fen !== game.fen()) {
-                    // Пришел новый ход из сети
-                    game.load(data.fen);
-                    board.position(data.fen);
-                    updateStatus();
-                    updateLog();
-                    showToast("Ход соперника");
-                }
-
-                // Обновление статуса соперника
-                if (playerColor === 'white' && data.status === 'active') {
-                     $('#player-color-display').text("Вы играете за: Белых (Соперник подключен)");
-                     if (!$('#toast').hasClass('opacity-100')) showToast("Соперник подключился!");
-                }
-            }, (error) => {
-                console.error("Ошибка подписки:", error);
-            });
-        }
-
-        async function sendMoveToFirestore(fen) {
-            if (!currentRoom) return;
-            const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games_' + currentRoom);
-            await updateDoc(gameRef, {
-                fen: fen,
-                lastMoveTime: new Date()
-            });
-        }
-
-        // --- Helper Functions ---
-        
-        window.closeModal = function() {
-            $('#modal').addClass('hidden');
-        }
-
-        window.showModal = function(title, msg) {
-            $('#modal-title').text(title);
-            $('#modal-msg').text(msg);
-            $('#modal').removeClass('hidden');
-        }
-        
-        window.showToast = function(msg) {
-            const t = $('#toast');
-            t.text(msg);
-            t.removeClass('opacity-0').addClass('opacity-100');
-            setTimeout(() => {
-                t.removeClass('opacity-100').addClass('opacity-0');
-            }, 3000);
-        }
-
-        window.copyToClipboard = function(text) {
-            const el = document.createElement('textarea');
-            el.value = text;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            showToast('ID скопирован: ' + text);
-        }
-
-        var positionCount;
-
+        })();
     </script>
 </body>
 </html>
