@@ -45,7 +45,7 @@
 
     <!-- Версия игры -->
     <div class="absolute top-2 right-2 text-gray-600 text-xs font-mono opacity-50 hover:opacity-100 transition-opacity select-none">
-        v1.0.6 (Fix)
+        v1.0.7 (Stable)
     </div>
 
     <!-- Заголовок -->
@@ -225,7 +225,7 @@
                 $('#status').text("Готово к игре!");
 
                 // --- WATCHDOG (Таймер безопасности) ---
-                // Если через 8 секунд Firebase не загрузился, считаем что мы оффлайн
+                // Увеличен до 15 секунд, чтобы дать время на Fallback ретрай
                 setTimeout(function() {
                     if (!firebaseAvailable) {
                         const statusEl = $('#connection-status');
@@ -239,7 +239,7 @@
                             window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Не удалось подключиться к серверу. Проверьте интернет или VPN.');
                         }
                     }
-                }, 8000);
+                }, 15000);
 
             } catch (err) {
                 console.error("Init Error:", err);
@@ -493,33 +493,31 @@
                         console.log("Онлайн модуль готов (UID: " + user.uid + ")");
                     }
                 });
-                
-                // ТАЙМАУТ ПОДКЛЮЧЕНИЯ (Для ТГ)
-                const connectionTimeout = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Timeout")), 7000)
-                );
 
                 try {
-                    // Попытка авторизации
-                    const authPromise = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token)
-                        ? signInWithCustomToken(auth, __initial_auth_token)
-                        : signInAnonymously(auth);
-
-                    await Promise.race([authPromise, connectionTimeout]);
+                    // ПРИОРИТЕТ 1: Токен (если есть)
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                         await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                         // ПРИОРИТЕТ 2: Быстрая попытка анонимного входа (3 сек)
+                         // Если зависнет - сразу пробуем InMemory
+                         const shortTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error("AuthTimeout")), 3000));
+                         await Promise.race([signInAnonymously(auth), shortTimeout]);
+                    }
 
                 } catch (err) {
-                    console.warn("Standard Auth failed/timeout, trying InMemory:", err);
-                    // ФОЛЛБЭК ДЛЯ TELEGRAM/INSTAGRAM WEBVIEW
-                    // Если обычный вход завис или упал, пробуем без сохранения сессии
+                    console.warn("Auth failed or timed out, switching to InMemoryPersistence...", err);
+                    
+                    // ПРИОРИТЕТ 3: Фолбэк для Telegram/Instagram Webview (InMemory)
                     try {
                         await setPersistence(auth, inMemoryPersistence);
                         await signInAnonymously(auth);
                     } catch (err2) {
                         console.error("Critical Auth Error:", err2);
-                        // Если и это не помогло, переопределяем кнопки на ошибку
-                        window.firebaseActions.createGame = async () => showModal('Ошибка', 'Онлайн недоступен в этом браузере.');
-                        window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Онлайн недоступен в этом браузере.');
-                        $('#connection-status').text("Ошибка подключения (Offline)").addClass('text-red-500').removeClass('hidden text-yellow-500');
+                        // Если даже InMemory не работает - значит сеть блокирует Firebase полностью
+                        window.firebaseActions.createGame = async () => showModal('Ошибка', 'Онлайн недоступен (Блокировка сети).');
+                        window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Онлайн недоступен (Блокировка сети).');
+                        $('#connection-status').text("Ошибка: Сеть блокирует сервер").addClass('text-red-500').removeClass('hidden text-yellow-500');
                         return;
                     }
                 }
