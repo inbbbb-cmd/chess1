@@ -22,18 +22,14 @@
             background-color: #1a202c; /* gray-900 */
             color: #e2e8f0; /* gray-200 */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overscroll-behavior: none; /* Блокировка "пружинистости" на Mac/iOS */
         }
         /* Адаптация доски */
         #myBoard {
             width: 100%;
-            max-width: 500px;
             margin: 0 auto;
-        }
-        .highlight-white {
-            box-shadow: inset 0 0 3px 3px yellow;
-        }
-        .highlight-black {
-            box-shadow: inset 0 0 3px 3px blue;
+            /* Важно для корректной работы touch-событий на мобильных */
+            touch-action: none; 
         }
         /* Стили для мобильных */
         @media (max-width: 600px) {
@@ -66,11 +62,16 @@
     <div class="bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-4xl flex flex-col md:flex-row gap-8">
         
         <!-- Левая колонка: Доска -->
-        <div class="flex-1 flex flex-col items-center">
-            <div id="status" class="w-full text-center mb-4 text-lg font-semibold text-white bg-gray-700 py-2 rounded">
-                Ход белых
+        <div class="flex-1 flex flex-col items-center justify-start w-full">
+            <div id="status" class="w-full text-center mb-4 text-lg font-semibold text-white bg-gray-700 py-2 rounded transition-colors duration-300">
+                Загрузка...
             </div>
-            <div id="myBoard"></div>
+            
+            <!-- Обертка для доски с фиксированным соотношением сторон для стабильности -->
+            <div class="w-full max-w-[500px] aspect-square bg-gray-700 rounded shadow-inner flex items-center justify-center overflow-hidden">
+                <div id="myBoard" class="w-full"></div>
+            </div>
+
             <!-- Индикатор взятых фигур (упрощенно) -->
             <div class="mt-4 flex justify-between w-full max-w-[500px] text-sm text-gray-400">
                 <span id="player-color-display">Вы играете за: Белых</span>
@@ -102,7 +103,7 @@
                             <option value="3">Сложный (Мастер)</option>
                         </select>
                     </div>
-                    <button id="startAiGame" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded transition">
+                    <button id="startAiGame" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded transition active:scale-95 shadow-lg border-b-4 border-yellow-700 hover:border-yellow-600">
                         <i class="fas fa-play mr-2"></i> Новая игра
                     </button>
                 </div>
@@ -112,16 +113,16 @@
                     <div class="mb-4">
                         <p class="text-xs text-gray-400 mb-2">Для игры с другом используйте ID комнаты.</p>
                         <div class="flex gap-2 mb-2">
-                            <button id="createGameBtn" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded text-sm font-bold">Создать</button>
-                            <button id="joinGameBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm font-bold">Войти</button>
+                            <button id="createGameBtn" class="flex-1 bg-green-600 hover:bg-green-500 py-2 rounded text-sm font-bold transition shadow border-b-4 border-green-800 active:border-0 active:translate-y-1">Создать</button>
+                            <button id="joinGameBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm font-bold transition shadow border-b-4 border-blue-800 active:border-0 active:translate-y-1">Войти</button>
                         </div>
-                        <div id="room-input-container" class="hidden">
+                        <div id="room-input-container" class="hidden animate-fade-in">
                             <input type="text" id="roomIdInput" placeholder="Введите ID комнаты" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white mb-2 text-center uppercase tracking-widest">
                             <button id="confirmJoinBtn" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded text-sm font-bold">Подключиться</button>
                         </div>
-                        <div id="room-display-container" class="hidden bg-gray-900 p-3 rounded text-center border border-yellow-500 border-dashed">
+                        <div id="room-display-container" class="hidden bg-gray-900 p-3 rounded text-center border border-yellow-500 border-dashed animate-pulse-once">
                             <p class="text-xs text-gray-400">Ваш ID комнаты:</p>
-                            <div class="text-xl font-mono font-bold text-yellow-500 select-all cursor-pointer" id="currentRoomId" onclick="copyToClipboard(this.innerText)">---</div>
+                            <div class="text-xl font-mono font-bold text-yellow-500 select-all cursor-pointer hover:text-white" id="currentRoomId" onclick="copyToClipboard(this.innerText)">---</div>
                             <p class="text-[10px] text-gray-500 mt-1">Нажмите, чтобы скопировать</p>
                         </div>
                     </div>
@@ -131,7 +132,7 @@
             <!-- История ходов (Лог) -->
             <div class="bg-gray-700 p-4 rounded-lg flex-1 overflow-hidden flex flex-col min-h-[200px]">
                 <h3 class="font-bold mb-2 text-sm text-gray-300">История ходов</h3>
-                <div id="pgn-log" class="flex-1 overflow-y-auto text-sm font-mono bg-gray-900 p-2 rounded text-gray-400">
+                <div id="pgn-log" class="flex-1 overflow-y-auto text-sm font-mono bg-gray-900 p-2 rounded text-gray-400 border border-gray-600">
                     Ожидание начала игры...
                 </div>
             </div>
@@ -144,11 +145,16 @@
 
     <!-- Модальное окно для сообщений -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
-        <div class="bg-gray-800 p-6 rounded-lg max-w-sm w-full text-center border border-gray-600">
-            <h3 id="modal-title" class="text-xl font-bold mb-2">Игра окончена</h3>
-            <p id="modal-msg" class="text-gray-300 mb-4">...</p>
-            <button onclick="closeModal()" class="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded">Закрыть</button>
+        <div class="bg-gray-800 p-6 rounded-lg max-w-sm w-full text-center border border-gray-600 shadow-2xl transform transition-all scale-100">
+            <h3 id="modal-title" class="text-xl font-bold mb-2 text-white">Сообщение</h3>
+            <p id="modal-msg" class="text-gray-300 mb-6">...</p>
+            <button onclick="closeModal()" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded transition">Понятно</button>
         </div>
+    </div>
+
+    <!-- Всплывающее уведомление (Toast) -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-yellow-600 text-white px-6 py-3 rounded-full shadow-lg transition-opacity duration-500 opacity-0 pointer-events-none z-50 font-bold">
+        Игра началась! Ваш ход.
     </div>
 
     <!-- Firebase SDKs -->
@@ -171,11 +177,13 @@
 
         // Авторизация
         async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                // В данной среде обычно используется анонимный вход или токен, если есть
-                await signInAnonymously(auth).catch(console.error);
-            } else {
-                await signInAnonymously(auth).catch(console.error);
+            try {
+                // Если есть токен, пробуем его, иначе анонимно.
+                // В песочнице часто работает просто signInAnonymously без параметров
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth Error:", error);
+                // Если ошибка, пробуем еще раз с задержкой или игнорируем, если уже авторизованы
             }
         }
         
@@ -195,6 +203,8 @@
 
         // --- UI Initialization ---
         $(document).ready(function() {
+            console.log("DOM Ready. Initializing Board...");
+
             // Инициализация доски
             var config = {
                 draggable: true,
@@ -204,7 +214,13 @@
                 onSnapEnd: onSnapEnd,
                 pieceTheme: 'https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/img/chesspieces/wikipedia/{piece}.png'
             };
-            board = Chessboard('myBoard', config);
+            
+            // Задержка инициализации для гарантии отрисовки контейнера
+            setTimeout(() => {
+                board = Chessboard('myBoard', config);
+                $(window).resize(board.resize); // Авто-ресайз при изменении окна
+                updateStatus();
+            }, 100);
 
             // Обработчики событий UI
             $('#gameMode').change(function() {
@@ -213,6 +229,9 @@
                     $('#ai-controls').removeClass('hidden');
                     $('#multiplayer-controls').addClass('hidden');
                     isAiMode = true;
+                    // Очистка состояния мультиплеера
+                    if(unsubscribeRoom) unsubscribeRoom();
+                    currentRoom = null;
                     resetGame();
                 } else {
                     $('#ai-controls').addClass('hidden');
@@ -225,20 +244,22 @@
             $('#startAiGame').click(function() {
                 aiDepth = parseInt($('#difficulty').val());
                 resetGame();
+                showToast("Игра началась! Ваш ход (Белые)");
             });
 
-            $('#resetBtn').click(resetGame);
+            $('#resetBtn').click(function() {
+                resetGame();
+                showToast("Доска сброшена");
+            });
 
             // Мультиплеер кнопки
             $('#createGameBtn').click(createMultiplayerGame);
             $('#joinGameBtn').click(() => {
                 $('#room-input-container').removeClass('hidden');
-                $('#createGameBtn').addClass('opacity-50');
+                $('#createGameBtn').addClass('opacity-50 cursor-not-allowed').prop('disabled', true);
                 $('#joinGameBtn').removeClass('opacity-50');
             });
             $('#confirmJoinBtn').click(joinMultiplayerGame);
-
-            updateStatus();
         });
 
         // --- Chess Logic Core ---
@@ -251,13 +272,12 @@
                 if (piece.search(/^b/) !== -1) return false;
             } else {
                 // В мультиплеере проверяем цвет игрока
-                // orientation возвращает 'white' или 'black'
                 if ((orientation === 'white' && piece.search(/^w/) === -1) ||
                     (orientation === 'black' && piece.search(/^b/) === -1)) {
                     return false;
                 }
                 
-                // Проверка чей ход в мультиплеере
+                // Проверка чей ход
                 if ((game.turn() === 'w' && orientation !== 'white') ||
                     (game.turn() === 'b' && orientation !== 'black')) {
                     return false;
@@ -281,6 +301,7 @@
 
             // Действия после хода
             if (isAiMode) {
+                // Небольшая задержка перед ходом AI для реализма
                 window.setTimeout(makeAiMove, 250);
             } else {
                 // Отправка хода в Firestore
@@ -322,7 +343,7 @@
         }
 
         function updateLog() {
-            $('#pgn-log').text(game.pgn());
+            $('#pgn-log').text(game.pgn() || "Игра началась. Ход белых.");
             // Автоскролл вниз
             var logDiv = document.getElementById("pgn-log");
             logDiv.scrollTop = logDiv.scrollHeight;
@@ -330,15 +351,13 @@
 
         function resetGame() {
             game.reset();
-            board.start();
-            // Сброс цвета игрока на дефолтный (Белые)
-            board.orientation('white'); 
+            if(board) {
+                board.start();
+                board.orientation('white'); 
+            }
             $('#player-color-display').text("Вы играете за: Белых");
             updateStatus();
             $('#pgn-log').text('Новая игра началась...');
-            
-            // Если была подписка на комнату - отписываемся, но не удаляем комнату тут (слишком сложно для UX)
-            // Лучше просто сбросить локальное состояние.
         }
 
         // --- AI Implementation (Minimax with Alpha-Beta) ---
@@ -346,10 +365,8 @@
         function makeAiMove() {
             if (game.game_over()) return;
 
-            // Вычисляем лучший ход
-            // Уровень 1: глубина 1, Уровень 2: глубина 2, Уровень 3: глубина 3
             var depth = aiDepth; 
-            if (aiDepth === 1) depth = 1; // иногда можно добавить рандом для уровня 1
+            if (aiDepth === 1) depth = 1;
 
             var positionCount = 0;
             var bestMove = minimaxRoot(depth, game, true);
@@ -362,8 +379,8 @@
 
         function minimaxRoot(depth, game, isMaximisingPlayer) {
             var newGameMoves = game.moves();
-            // Для 1 уровня можно добавить случайность
-            if (aiDepth === 1 && Math.random() < 0.3) {
+            // Рандом для новичка
+            if (aiDepth === 1 && Math.random() < 0.4) {
                 return newGameMoves[Math.floor(Math.random() * newGameMoves.length)];
             }
 
@@ -418,7 +435,6 @@
             }
         }
 
-        // Оценка позиции
         function evaluateBoard(board) {
             var totalEvaluation = 0;
             for (var i = 0; i < 8; i++) {
@@ -447,15 +463,14 @@
                 } else if (piece.type === 'k') {
                     return 900 + ( isWhite ? kingEvalWhite[y][x] : kingEvalBlack[y][x] );
                 }
-                return 0; // Неизвестная фигура
+                return 0;
             };
 
             var absoluteValue = getAbsoluteValue(piece, piece.color === 'w', x ,y);
             return piece.color === 'w' ? absoluteValue : -absoluteValue;
         }
 
-        // --- Position Evaluation Tables (Simplified Stockfish logic) ---
-        // Перевернутые таблицы для черных не нужны, так как мы читаем массив иначе, но для простоты определим явно.
+        // --- Position Evaluation Tables ---
         var pawnEvalWhite = [
             [0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
             [5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
@@ -534,12 +549,16 @@
         }
 
         async function createMultiplayerGame() {
-            if (!currentUser) { alert('Ошибка авторизации. Перезагрузите страницу.'); return; }
+            if (!currentUser) { 
+                showModal('Ошибка', 'Авторизация еще выполняется. Подождите пару секунд.');
+                return; 
+            }
             
             const roomId = generateRoomId();
             const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games_' + roomId);
             
             try {
+                showToast("Создание комнаты...");
                 await setDoc(gameRef, {
                     fen: 'start',
                     createdAt: new Date(),
@@ -561,43 +580,51 @@
                 board.start();
 
                 listenToGame(roomId);
+                showToast("Комната создана! ID: " + roomId);
 
             } catch (e) {
                 console.error(e);
-                alert('Ошибка создания игры: ' + e.message);
+                showModal('Ошибка', 'Не удалось создать игру: ' + e.message);
             }
         }
 
         async function joinMultiplayerGame() {
-            if (!currentUser) { alert('Ошибка авторизации.'); return; }
+            if (!currentUser) { showModal('Ошибка', 'Нет авторизации.'); return; }
             
             const inputId = $('#roomIdInput').val().trim().toUpperCase();
-            if (inputId.length < 3) { alert('Введите корректный ID'); return; }
+            if (inputId.length < 3) { showModal('Внимание', 'Введите корректный ID'); return; }
 
             const gameRef = doc(db, 'artifacts', appId, 'public', 'data', 'games_' + inputId);
-            const gameSnap = await getDoc(gameRef);
+            showToast("Подключение...");
+            
+            try {
+                const gameSnap = await getDoc(gameRef);
 
-            if (gameSnap.exists()) {
-                currentRoom = inputId;
-                playerColor = 'black';
-                
-                // UI
-                $('#room-input-container').addClass('hidden');
-                $('#room-display-container').removeClass('hidden');
-                $('#currentRoomId').text(inputId);
-                
-                $('#player-color-display').text("Вы играете за: Черных");
-                board.orientation('black');
-                
-                // Сообщаем, что второй игрок зашел
-                await updateDoc(gameRef, {
-                    status: 'active',
-                    guest: currentUser.uid
-                });
+                if (gameSnap.exists()) {
+                    currentRoom = inputId;
+                    playerColor = 'black';
+                    
+                    // UI
+                    $('#room-input-container').addClass('hidden');
+                    $('#room-display-container').removeClass('hidden');
+                    $('#currentRoomId').text(inputId);
+                    
+                    $('#player-color-display').text("Вы играете за: Черных");
+                    board.orientation('black');
+                    
+                    // Сообщаем, что второй игрок зашел
+                    await updateDoc(gameRef, {
+                        status: 'active',
+                        guest: currentUser.uid
+                    });
 
-                listenToGame(inputId);
-            } else {
-                alert('Комната не найдена!');
+                    listenToGame(inputId);
+                    showToast("Подключено! Вы играете за Черных");
+                } else {
+                    showModal('Ошибка', 'Комната с таким ID не найдена!');
+                }
+            } catch (e) {
+                showModal('Ошибка', 'Ошибка подключения: ' + e.message);
             }
         }
 
@@ -617,11 +644,13 @@
                     board.position(data.fen);
                     updateStatus();
                     updateLog();
+                    showToast("Ход соперника");
                 }
 
                 // Обновление статуса соперника
                 if (playerColor === 'white' && data.status === 'active') {
                      $('#player-color-display').text("Вы играете за: Белых (Соперник подключен)");
+                     if (!$('#toast').hasClass('opacity-100')) showToast("Соперник подключился!");
                 }
             }, (error) => {
                 console.error("Ошибка подписки:", error);
@@ -648,19 +677,26 @@
             $('#modal-msg').text(msg);
             $('#modal').removeClass('hidden');
         }
+        
+        window.showToast = function(msg) {
+            const t = $('#toast');
+            t.text(msg);
+            t.removeClass('opacity-0').addClass('opacity-100');
+            setTimeout(() => {
+                t.removeClass('opacity-100').addClass('opacity-0');
+            }, 3000);
+        }
 
         window.copyToClipboard = function(text) {
-            // Используем старый метод для надежности в iframe
             const el = document.createElement('textarea');
             el.value = text;
             document.body.appendChild(el);
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            alert('ID скопирован: ' + text);
+            showToast('ID скопирован: ' + text);
         }
 
-        // Глобальная переменная для счетчика позиций в AI
         var positionCount;
 
     </script>
