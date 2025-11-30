@@ -45,7 +45,7 @@
 
     <!-- Версия игры -->
     <div class="absolute top-2 right-2 text-gray-600 text-xs font-mono opacity-50 hover:opacity-100 transition-opacity select-none">
-        v1.0.5
+        v1.0.6 (Fix)
     </div>
 
     <!-- Заголовок -->
@@ -223,6 +223,23 @@
                 $('#confirmJoinBtn').click(function() { firebaseActions.joinGame() });
 
                 $('#status').text("Готово к игре!");
+
+                // --- WATCHDOG (Таймер безопасности) ---
+                // Если через 8 секунд Firebase не загрузился, считаем что мы оффлайн
+                setTimeout(function() {
+                    if (!firebaseAvailable) {
+                        const statusEl = $('#connection-status');
+                        // Если статус все еще "Подключение..."
+                        if (statusEl.length > 0 && !statusEl.hasClass('text-red-500')) {
+                            console.warn("Firebase watchdog timed out.");
+                            statusEl.html('<i class="fas fa-wifi"></i> Сервер недоступен (Оффлайн)').removeClass('text-yellow-500 hidden').addClass('text-red-500');
+                            
+                            // Блокируем кнопки
+                            window.firebaseActions.createGame = async () => showModal('Ошибка', 'Не удалось подключиться к серверу. Проверьте интернет или VPN.');
+                            window.firebaseActions.joinGame = async () => showModal('Ошибка', 'Не удалось подключиться к серверу. Проверьте интернет или VPN.');
+                        }
+                    }
+                }, 8000);
 
             } catch (err) {
                 console.error("Init Error:", err);
@@ -450,9 +467,9 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, inMemoryPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, inMemoryPersistence } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
         (async function initFirebase() {
             try {
